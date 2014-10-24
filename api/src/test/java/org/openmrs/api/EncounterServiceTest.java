@@ -165,28 +165,27 @@ public class EncounterServiceTest extends BaseContextSensitiveTest {
 		Obs groupObs = new Obs();
 		groupObs.setConcept(new Concept(1));
 		groupObs.setValueNumeric(50d);
-		
+
 		// add an obs to the group
 		Obs childObs = new Obs();
 		childObs.setConcept(new Concept(1));
 		childObs.setValueNumeric(50d);
 		groupObs.addGroupMember(childObs);
 		enc.addObs(groupObs);
-		
+
 		//confirm that save and new enc id are cascaded to obs groupMembers
 		//even though childObs aren't directly associated to enc
 		assertNotNull("save succeeds without error", es.saveEncounter(enc));
 		assertTrue("enc save succeeds", enc.getId() > 0);
-		
+
 		assertNotNull("obs save succeeds", groupObs.getObsId());
 		assertEquals("encounter id propogated", groupObs.getEncounter().getId(), enc.getId());
 		assertEquals("encounter time propogated", groupObs.getObsDatetime(), enc.getEncounterDatetime());
 		assertNotNull("obs save succeeds", childObs.getObsId());
 		assertEquals("encounter id propogated", childObs.getEncounter().getId(), enc.getId());
 		assertEquals("encounter time propogated", childObs.getObsDatetime(), enc.getEncounterDatetime());
-		
 	}
-	
+
 	/**
 	 * When you save the encounter with a changed location, the location change should be cascaded
 	 * to all the obs associated with the encounter that had the same location as the encounter.
@@ -2657,4 +2656,40 @@ public class EncounterServiceTest extends BaseContextSensitiveTest {
 		assertEquals(encounterRoles.size(), 1);
 		assertEquals(encounterRoles.get(0).getName(), name);
 	}
+
+
+    @Test
+    public void saveEncounter_miserablyFailsWithOrderAndObs() throws Exception {
+        EncounterService es = Context.getEncounterService();
+
+        // First, create a new Encounter
+        Encounter encounter = buildEncounter();
+        Order order = buildOrder(encounter);
+
+        // add an obs to the group
+        Obs obs = new Obs();
+        obs.setConcept(new Concept(1));
+        obs.setValueNumeric(50d);
+        obs.setOrder(order);
+        encounter.addObs(obs);
+        encounter.addOrder(order);
+
+        es.saveEncounter(encounter);
+    }
+
+    private Order buildOrder(Encounter enc) {
+        Order order = new TestOrder();
+        OrderService orderService = Context.getOrderService();
+        PatientService patientService = Context.getPatientService();
+        ConceptService conceptService = Context.getConceptService();
+        ProviderService providerService = Context.getProviderService();
+        order.setPatient(patientService.getPatient(7));
+        order.setConcept(conceptService.getConcept(5497));
+        order.setOrderer(providerService.getProvider(1));
+        order.setCareSetting(orderService.getCareSetting(1));
+        order.setOrderType(orderService.getOrderType(2));
+        order.setEncounter(enc);
+        order.setDateActivated(new Date());
+        return order;
+    }
 }
