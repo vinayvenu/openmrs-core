@@ -191,16 +191,20 @@ public class EncounterServiceImpl extends BaseOpenmrsService implements Encounte
 			}
 		}
 
+        // do the actual saving to the database
+        dao.saveEncounter(encounter);
+
 		// save the new orders
 		for (Order o : encounter.getOrders()) {
 			if (o.getOrderId() == null) {
 				Context.getOrderService().saveOrder(o, null);
-			}
+            }
 		}
 
-        // do the actual saving to the database
-        dao.saveEncounter(encounter);
-
+        for (Obs obs: encounter.getObs()) {
+            Context.getObsService().saveObs(obs, "");
+        }
+		
 		return encounter;
 	}
 	
